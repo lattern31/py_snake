@@ -1,0 +1,1 @@
+simple console snake written with python but with todays exchange rates (only for crypto chads😎)
