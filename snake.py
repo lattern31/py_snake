@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from random import randint
 from time import sleep
 from os import get_terminal_size
@@ -249,6 +250,7 @@ class Snake:
 
         self.move(self.direct)
 
+#tf is going on here
     def move(self, d):
             pos = self.pos_lst[-1] 
             pos = (pos[0] + d[0], pos[1] + d[1])
@@ -277,18 +279,22 @@ if __name__ == '__main__':
     MAIN_CURRENSY = 'rub'
     CURRENCIES = ('btc', 'usd', 'eur', 'cny')
     COMMANDS = [
-        ' help', 
-        ' window_size {width}(>=20)x{height}(>=10)',
-        ' terminal_size',
-        ' list_all_currencies'
-        ' main_currency {currency}',
-        ' currencies {currency},{currency}'
+        ' ', 
+        ' -h, -help :  This.',
+        ' ',
+        ' window_size : {width}(>=20)x{height}(>=10)',
+        ' terminal_size : current terminal size',
+        ' ',
+        ' list_all_currencies, list',
+        ' main_currency {currency} ',
+        ' currencies {currency},{currency}',
+        ' '
         ]
 
     def parse_arg():
         global SIZE
         if len(sys.argv) > 1:
-            for command in ('list_all_currencies', 'main_currency', 'currencies'):
+            for command in ('list_all_currencies', 'main_currency', 'currencies', 'list'):
                 if command in sys.argv:
                     DCT_CURRENCIES = json.loads(requests.get("https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies.json").content)
                     break
@@ -296,13 +302,13 @@ if __name__ == '__main__':
                 CURRENCIES = []
             size_term = get_terminal_size()
             for indx, i in enumerate(sys.argv[1:], 0):
-                if i == 'help':
+                if i == 'help' or i == 'h' or i == '-help' or i == '-h' :
                     print(*COMMANDS, sep='\n')
                     exit()
                 elif i == 'terminal_size':
                     print(*get_terminal_size())
                     exit()
-                elif i == 'list_all_currencies':
+                elif i == 'list_all_currencies' or i == 'list':
                     [print(f'{a}: {b}') for a,b in DCT_CURRENCIES.items()]
                     exit()
                 elif i == 'window_size':
