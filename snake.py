@@ -99,14 +99,14 @@ class Snake:
         map[2] = map[1].copy()
         map[1] = map[0].copy()
         map[1][0] = map[1][size[0]-1] = '│'
-        for indx, s in enumerate('loading...', 1):
-            map[1][indx] = s
+        self.header = self.head_tmp = 'loading...'
         self.map = map
 
         value_thread = Thread(target=self.value)
         value_thread.start()
 
         self.win_amount = (self.w-2) * (self.h-4)
+        self.frame_count = 0
         self.key = None
         self.old_map = None
         self.exit_flag = False
@@ -115,6 +115,7 @@ class Snake:
         self.end_game_option_flag = False
 
     def unix_recog(self):
+        """unix like system keyboard's recognition"""
         import select
         import tty
         import termios
@@ -134,6 +135,7 @@ class Snake:
             sleep(0.05)
 
     def win_recog(self):
+        """windows keyboard's recognition"""
         import msvcrt
         while True:
             if msvcrt.kbhit():
@@ -145,6 +147,7 @@ class Snake:
                 sleep(0.05)
 
     def value(self):
+        """request to get current external rates"""
         global CURRENCIES, MAIN_CURRENSY
         link = 'https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/'
         try:
@@ -153,14 +156,21 @@ class Snake:
             for cur in CURRENCIES:
                 cont = requests.get(f'{link}{cur}/{MAIN_CURRENSY}.json').content
                 dct_s += f" {cur}: {json.loads(cont)[MAIN_CURRENSY]:.2f},"
-                self.header = date + dct_s[:-1]
-        except: self.header = 'network error'
-        finally:
-            for indx, s in enumerate(self.header, 1):
-                if indx >= self.w-1: break
-                self.map[1][indx] = s
+                self.frame_count = 0
+                self.header = self.head_tmp = date + dct_s[:-1]
+        except: 
+            self.frame_count = 0
+            self.header = self.head_tmp = 'network error'
+    
+    def swimming_string(self):
+        if len(self.head_tmp) < self.w-2:
+            self.head_tmp += ' ' * 5 + self.header
+        out = self.head_tmp[:self.w-2]
+        self.head_tmp = self.head_tmp[1:]
+        return out
 
     def main(self):
+        """which new frame will be drawn"""
         if self.exit_flag:
             return True
         elif self.new_game_flag:
@@ -175,6 +185,11 @@ class Snake:
                 self.end_game_map()
         else:
             self.game_tick()
+        
+        head = self.swimming_string()
+        for indx, s in enumerate(head, 1):
+            self.map[1][indx] = s
+        self.frame_count += 1
 
         Window.print_map(self.map)
 
@@ -229,6 +244,7 @@ class Snake:
                 self.end_game_option_flag = False
 
     def game_tick(self):
+        """snake go shhh and move(fruits spawns also)"""
         def translate(inp):
             dct = {'w': (-1, 0), 'a': (0, -1), 's': (1, 0), 'd': (0, 1)}
             return dct.get(inp)
@@ -236,7 +252,7 @@ class Snake:
         def add_fruit():
             fruit = (randint(3, self.h-2), randint(1, self.w-2))
             self.fruit_lst.append(fruit)
-            self.map[fruit[0]][fruit[1]] = '7'
+            self.map[fruit[0]][fruit[1]] = '$'
             self.i = 0
 
         self.i += 1
@@ -250,20 +266,20 @@ class Snake:
         self.move(self.direct)
 
     def move(self, d):
-            pos = self.pos_lst[-1] 
-            pos = (pos[0] + d[0], pos[1] + d[1])
-            h_flag = 2 < pos[0] < self.h-1
-            w_flag = 0 < pos[1] < self.w-1
-            if not h_flag or not w_flag or pos in self.pos_lst:
-                self.end_game_flag = True
-                return
-            self.map[pos[0]][pos[1]] = 'o'
-            self.pos_lst.append(pos)
-            if pos in self.fruit_lst:
-                self.fruit_lst.remove(pos)
-            else:
-                old_pos = self.pos_lst.pop(0)
-                self.map[old_pos[0]][old_pos[1]] = ' '
+        pos = self.pos_lst[-1] # all snake's body
+        pos = (pos[0] + d[0], pos[1] + d[1])
+        h_flag = 2 < pos[0] < self.h-1 # flags if snake in borders
+        w_flag = 0 < pos[1] < self.w-1
+        if not h_flag or not w_flag or pos in self.pos_lst:
+            self.end_game_flag = True
+            return
+        self.map[pos[0]][pos[1]] = 'o' # add to map new head
+        self.pos_lst.append(pos)
+        if pos in self.fruit_lst: # or not
+            self.fruit_lst.remove(pos) 
+        else:
+            old_pos = self.pos_lst.pop(0) # clear tail
+            self.map[old_pos[0]][old_pos[1]] = ' '
 
     @staticmethod
     def reset_terminal():
