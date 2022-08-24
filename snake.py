@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from random import randint
 from time import sleep
-from os import get_terminal_size
+import os
 from threading import Thread
-import requests
+import urllib.request as request
 import json
 import sys
 
@@ -91,10 +91,10 @@ class Snake:
 
         self.size = size
         self.w, self.h = size
-        term_size = get_terminal_size()
+        term_size = os.get_terminal_size()
         if term_size[0] < self.w or term_size[1] < self.h:
             Window.window_size(SIZE)
-            term_size = get_terminal_size()
+            term_size = os.get_terminal_size()
         map = Window.make_map(*term_size)
         Window.make_border_map(map, size=size)
         map[2] = map[1].copy()
@@ -152,10 +152,10 @@ class Snake:
         global CURRENCIES, MAIN_CURRENSY
         link = 'https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies/'
         try:
-            date = json.loads(requests.get(f'{link}usd/rub.json').content)['date'] + ' |'
+            date = json.loads(request.urlopen(f'{link}usd/rub.json').read())['date'] + ' |'
             dct_s = ''
             for cur in CURRENCIES:
-                cont = requests.get(f'{link}{cur}/{MAIN_CURRENSY}.json').content
+                cont = request.urlopen(f'{link}{cur}/{MAIN_CURRENSY}.json').read()
                 dct_s += f" {cur}: {json.loads(cont)[MAIN_CURRENSY]:.2f},"
                 self.frame_count = 0
                 self.header = self.head_tmp = date + dct_s[:-1]
@@ -285,8 +285,8 @@ class Snake:
 
     @staticmethod
     def reset_terminal():
-        import termios
-        if sys.platform == "linux":
+        if sys.platform in ("linux", "darwin"):
+            import termios
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
 
@@ -312,17 +312,17 @@ if __name__ == '__main__':
         if len(sys.argv) > 1:
             for command in ('list_all_currencies', 'main_currency', 'currencies', 'list'):
                 if command in sys.argv:
-                    DCT_CURRENCIES = json.loads(requests.get("https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies.json").content)
+                    DCT_CURRENCIES = json.loads(request.urlopen("https://cdn.jsdelivr.net/gh/fawazahmed0/currency-api@1/latest/currencies.json").read())
                     break
             if 'currencies' in sys.argv:
                 CURRENCIES = []
-            size_term = get_terminal_size()
+            size_term = os.get_terminal_size()
             for indx, i in enumerate(sys.argv[1:], 0):
                 if i == 'help' or i == 'h' or i == '-help' or i == '-h' :
                     print(*COMMANDS, sep='\n')
                     exit()
                 elif i == 'terminal_size':
-                    print(*get_terminal_size())
+                    print(*os.get_terminal_size())
                     exit()
                 elif i == 'list_all_currencies' or i == 'list':
                     [print(f'{a}: {b}') for a,b in DCT_CURRENCIES.items()]
@@ -357,14 +357,15 @@ if __name__ == '__main__':
                     CURRENCIES.append(cur)
 
     def main():
-        print("\033[?1049h")
         snake = Snake(size=SIZE)
         w_min, h_min = SIZE
-        w, h = get_terminal_size()
+        w, h = os.get_terminal_size()
         w_old, h_old = w, h
+        os.system("")
+        print("\033[?1049h")
         exit_flag = False
         while not exit_flag:
-            w, h = get_terminal_size()
+            w, h = os.get_terminal_size()
             if w < w_min or h < h_min:
                 Window.window_size(SIZE)
             elif w != w_old or h != h_old: 
@@ -372,7 +373,6 @@ if __name__ == '__main__':
             w_old, h_old = w, h
             exit_flag = snake.main()
             sleep(0.05)
-        Snake.reset_terminal()
 
     parse_arg()
     try:
